@@ -76,7 +76,7 @@ export function FileUpload({ onUpload, isUploading, progress, status, onRetry }:
             </div>
             <div>
               <p className="text-lg font-medium text-foreground">Drop your meeting recording here</p>
-              <p className="mt-1 text-sm text-muted-foreground">or click to browse · MP4, WebM, MOV up to 500MB</p>
+              <p className="mt-1 text-sm text-muted-foreground">or click to browse · MP4, WebM, MOV up to 100MB</p>
             </div>
           </div>
         </div>

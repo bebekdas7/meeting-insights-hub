@@ -5,7 +5,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { EmptyState } from '@/components/EmptyState';
 import { SkeletonTable } from '@/components/SkeletonLoaders';
 import { Input } from '@/components/ui/input';
-import { mockActionItems } from '@/services/mockData';
+import { api } from '@/services/api';
 import type { ActionItem, ActionItemStatus } from '@/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -18,8 +18,33 @@ export default function ActionItemsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const t = setTimeout(() => { setItems(mockActionItems); setLoading(false); }, 500);
-    return () => clearTimeout(t);
+    setLoading(true);
+    api.actionItems.list()
+      .then((res: any) => {
+        if (Array.isArray(res.actionItems)) {
+          setItems(res.actionItems.map((item: any) => ({
+            id: String(item.id),
+            meetingId: item.meeting_id,
+            meetingTitle: item.meetingTitle || '',
+            description: item.task || item.description,
+            assignee: item.assignee || 'Unassigned',
+            status: item.status,
+          })));
+        } else if (Array.isArray(res)) {
+          setItems(res.map((item: any) => ({
+            id: String(item.id),
+            meetingId: item.meeting_id,
+            meetingTitle: item.meetingTitle || '',
+            description: item.task || item.description,
+            assignee: item.assignee || 'Unassigned',
+            status: item.status,
+          })));
+        } else {
+          setItems([]);
+        }
+      })
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const assignees = useMemo(() => [...new Set(items.map(i => i.assignee))], [items]);

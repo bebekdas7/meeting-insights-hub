@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, Sparkles, CheckSquare, Video } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge';
 import { SkeletonBlock } from '@/components/SkeletonLoaders';
 import { Button } from '@/components/ui/button';
-import { mockMeetings, mockActionItems } from '@/services/mockData';
+import { api } from '@/services/api';
 import type { Meeting, ActionItem } from '@/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -18,13 +18,47 @@ export default function MeetingDetailPage() {
   const [activeTab, setActiveTab] = useState<'transcript' | 'summary' | 'actions'>('summary');
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      const m = mockMeetings.find(x => x.id === id) || null;
-      setMeeting(m);
-      setActionItems(mockActionItems.filter(a => a.meetingId === id));
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(t);
+    setLoading(true);
+    Promise.all([
+      api.meetings.get(id as string),
+      api.actionItems.getByMeeting(id as string)
+    ])
+      .then(([meetingRes, actionItemsRes]: [any, any]) => {
+        // Meeting
+        if (meetingRes && meetingRes.meeting) {
+          setMeeting({
+            id: meetingRes.meeting.id,
+            title: meetingRes.meeting.title || 'Untitled Meeting',
+            filename: meetingRes.meeting.video_path?.split('\\').pop() || '',
+            uploadDate: meetingRes.meeting.created_at,
+            status: meetingRes.meeting.status,
+            videoUrl: meetingRes.meeting.video_path,
+            transcript: meetingRes.meeting.transcript,
+            summary: meetingRes.meeting.summary,
+            duration: meetingRes.meeting.duration || '—',
+          });
+        } else {
+          setMeeting(null);
+        }
+        // Action Items
+        if (actionItemsRes && Array.isArray(actionItemsRes.actionItems)) {
+          setActionItems(actionItemsRes.actionItems.map((item: any) => ({
+            id: String(item.id),
+            meetingId: item.meeting_id,
+            meetingTitle: meetingRes?.meeting?.title || '',
+            description: item.task,
+            assignee: item.assignee || 'Unassigned',
+            status: item.status,
+          })));
+        } else {
+          setActionItems([]);
+        }
+      })
+      .catch(() => {
+        setMeeting(null);
+        setActionItems([]);
+      })
+      .finally(() => setLoading(false));
   }, [id]);
 
   const toggleActionStatus = (itemId: string) => {
@@ -82,7 +116,7 @@ export default function MeetingDetailPage() {
         <StatusBadge status={meeting.status} />
       </div>
 
-      {meeting.status === 'processing' && (
+      {meeting.status === 'pending' && (
         <div className="mb-6 rounded-xl border border-warning/20 bg-warning/5 p-4 flex items-center gap-3">
           <div className="h-2 w-2 rounded-full bg-warning animate-pulse" />
           <p className="text-sm text-foreground">This meeting is currently being processed. Transcript and summary will appear when ready.</p>

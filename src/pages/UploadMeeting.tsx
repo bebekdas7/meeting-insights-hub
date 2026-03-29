@@ -1,33 +1,28 @@
+
 import { useState } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { toast } from 'sonner';
+import { api } from '@/services/api';
 
 export default function UploadPage() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'failed'>('idle');
 
-  const handleUpload = async (_file: File) => {
+  const handleUpload = async (file: File) => {
     setStatus('uploading');
     setProgress(0);
-
-    // Simulate upload
-    for (let i = 0; i <= 100; i += 5) {
-      await new Promise(r => setTimeout(r, 80));
-      setProgress(i);
-    }
-
-    setStatus('processing');
-    toast.info('Processing your meeting with AI...');
-
-    await new Promise(r => setTimeout(r, 2500));
-
-    // Simulate success (80%) or failure (20%)
-    if (Math.random() > 0.2) {
-      setStatus('completed');
-      toast.success('Meeting processed successfully!');
-    } else {
+    try {
+      const res = await api.meetings.upload(file, (pct) => setProgress(pct));
+      if (res && res.success) {
+        setStatus('completed');
+        toast.success('Meeting uploaded! AI will process it soon.');
+      } else {
+        setStatus('failed');
+        toast.error(res?.message || 'Upload failed. Please try again.');
+      }
+    } catch (err: any) {
       setStatus('failed');
-      toast.error('Processing failed. Please try again.');
+      toast.error(err?.message || 'Upload failed. Please try again.');
     }
   };
 

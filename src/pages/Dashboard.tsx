@@ -4,7 +4,7 @@ import { Video, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 import { KPICard } from '@/components/KPICard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { SkeletonCard, SkeletonTable } from '@/components/SkeletonLoaders';
-import { mockStats, mockMeetings } from '@/services/mockData';
+import { api } from '@/services/api';
 import type { DashboardStats, Meeting } from '@/types';
 
 export default function DashboardPage() {
@@ -14,12 +14,44 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setStats(mockStats);
-      setMeetings(mockMeetings.slice(0, 5));
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(t);
+    setLoading(true);
+    // Fetch dashboard stats
+    api.meetings.getDashboard?.()
+      .then((res: any) => {
+        if (res) {
+          setStats({
+            totalMeetings: res.totalMeetings,
+            pendingMeetings: res.pendingMeetings,
+            pendingTasks: res.pendingActionItems, // map API field
+            completedTasks: res.completedActionItems // map API field
+          });
+        } else {
+          setStats(null);
+        }
+      })
+      .catch(() => setStats(null));
+
+    // Fetch recent meetings
+    api.meetings.getRecent?.()
+      .then((res: any) => {
+        if (res && res.meetings) {
+          setMeetings(res.meetings.map((meeting: any) => ({
+            id: meeting.id,
+            title: meeting.title || meeting.summary || 'Untitled Meeting',
+            filename: meeting.video_path?.split('\\').pop() || '',
+            uploadDate: meeting.created_at,
+            status: meeting.status,
+            videoUrl: meeting.video_path,
+            transcript: meeting.transcript,
+            summary: meeting.summary,
+            duration: meeting.duration || '—',
+          })));
+        } else {
+          setMeetings([]);
+        }
+      })
+      .catch(() => setMeetings([]))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -39,7 +71,7 @@ export default function DashboardPage() {
           <KPICard title="Total Meetings" value={stats.totalMeetings} icon={Video} delay={100} />
           <KPICard title="Pending Tasks" value={stats.pendingTasks} icon={Clock} delay={160} />
           <KPICard title="Completed Tasks" value={stats.completedTasks} icon={CheckCircle2} delay={220} />
-          <KPICard title="Processing" value={stats.processingMeetings} icon={Loader2} delay={280} />
+          <KPICard title="Pending Meetings" value={stats.pendingMeetings} icon={Loader2} delay={280} />
         </div>
       )}
 
@@ -71,7 +103,7 @@ export default function DashboardPage() {
                     <td className="hidden sm:table-cell px-4 py-3.5 text-muted-foreground">
                       {new Date(m.uploadDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </td>
-                    <td className="hidden md:table-cell px-4 py-3.5 text-muted-foreground tabular-nums">{m.duration || '—'}</td>
+                    <td className="hidden md:table-cell px-4 py-3.5 text-muted-foreground tabular-nums">{m.duration ?? '—'}</td>
                     <td className="px-4 py-3.5"><StatusBadge status={m.status} /></td>
                   </tr>
                 ))}

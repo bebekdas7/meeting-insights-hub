@@ -1,5 +1,10 @@
-export type MeetingStatus = 'uploading' | 'processing' | 'completed' | 'failed';
-export type ActionItemStatus = 'pending' | 'done';
+export type MeetingStatus =
+  | "uploading"
+  | "pending"
+  | "completed"
+  | "failed"
+  | "uploaded";
+export type ActionItemStatus = "pending" | "done";
 
 export interface User {
   id: string;
@@ -33,7 +38,7 @@ export interface DashboardStats {
   totalMeetings: number;
   pendingTasks: number;
   completedTasks: number;
-  processingMeetings: number;
+  pendingMeetings: number;
 }
 
 export interface AuthResponse {

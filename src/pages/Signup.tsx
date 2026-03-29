@@ -33,12 +33,14 @@ export default function SignupPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 800));
-      login('mock-jwt-token', { id: '1', email, name });
-      toast.success('Account created!');
-      navigate('/');
-    } catch {
-      toast.error('Something went wrong');
+      // Call real signup API
+      const res = await import('@/services/api').then(m => m.api.auth.signup(email, password));
+      toast.success(res.message || 'Account created!');
+      // Optionally, auto-login after signup (if backend returns token), else redirect to login
+      // login(res.data.token, res.data.user); // If token is returned
+      navigate('/login');
+    } catch (err: any) {
+      toast.error(err.message || 'Signup failed');
     } finally {
       setLoading(false);
     }

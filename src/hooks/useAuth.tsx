@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { User } from '@/types';
+const { api } = await import('@/services/api');
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (token: string, user: User) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -20,14 +21,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedToken = localStorage.getItem('auth_token');
     const storedUser = localStorage.getItem('auth_user');
-    if (storedToken && storedUser) {
+    if (storedToken) {
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+    }
+    if (storedUser && storedUser !== 'undefined') {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        setUser(null);
+      }
     }
     setIsLoading(false);
   }, []);
 
-  const login = useCallback((newToken: string, newUser: User) => {
+
+  const login = useCallback(async (email: string, password: string) => {
+    // Call backend API
+    const { token: newToken, user: newUser } = await api.auth.login(email, password);
     localStorage.setItem('auth_token', newToken);
     localStorage.setItem('auth_user', JSON.stringify(newUser));
     setToken(newToken);

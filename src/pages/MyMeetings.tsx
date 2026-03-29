@@ -6,10 +6,10 @@ import { EmptyState } from '@/components/EmptyState';
 import { SkeletonTable } from '@/components/SkeletonLoaders';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { mockMeetings } from '@/services/mockData';
+import { api } from '@/services/api';
 import type { Meeting, MeetingStatus } from '@/types';
 
-const STATUSES: (MeetingStatus | 'all')[] = ['all', 'completed', 'processing', 'failed'];
+const STATUSES: (MeetingStatus | 'all')[] = ['all', 'completed', 'pending', 'failed'];
 
 export default function MyMeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -19,8 +19,25 @@ export default function MyMeetingsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const t = setTimeout(() => { setMeetings(mockMeetings); setLoading(false); }, 500);
-    return () => clearTimeout(t);
+    setLoading(true);
+    api.meetings.list()
+      .then((res: any) => {
+        // API returns { meetings: [...] }
+        const meetings = (res.meetings || []).map((m: any) => ({
+          id: m.id,
+          title: m.title || 'Untitled Meeting',
+          filename: m.video_path?.split('\\').pop() || '',
+          uploadDate: m.created_at,
+          status: m.status,
+          videoUrl: m.video_path,
+          transcript: m.transcript,
+          summary: m.summary,
+          duration: m.duration,
+        }));
+        setMeetings(meetings);
+      })
+      .catch(() => setMeetings([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {

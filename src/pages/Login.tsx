@@ -31,13 +31,11 @@ export default function LoginPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-      // Mock login
-      await new Promise(r => setTimeout(r, 800));
-      login('mock-jwt-token', { id: '1', email, name: email.split('@')[0] });
+      await login(email, password);
       toast.success('Welcome back!');
       navigate('/');
-    } catch {
-      toast.error('Invalid credentials');
+    } catch (err: any) {
+      toast.error(err.message || 'Invalid credentials');
     } finally {
       setLoading(false);
     }
