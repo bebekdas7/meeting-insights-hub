@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { api } from '@/services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,7 @@ export default function SignupPage() {
     setLoading(true);
     try {
       // Call real signup API
-      const res = await import('@/services/api').then(m => m.api.auth.signup(email, password));
+      const res = await api.auth.signup(email, password);
       toast.success(res.message || 'Account created!');
       // Optionally, auto-login after signup (if backend returns token), else redirect to login
       // login(res.data.token, res.data.user); // If token is returned
