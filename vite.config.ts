@@ -12,6 +12,12 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  preview: {
+    allowedHosts: [
+      "meeting-insights-hub.onrender.com",
+      "https://meeting-insights-hub.onrender.com/",
+    ],
+  },
   plugins: [react(), mode === "development" && componentTagger()].filter(
     Boolean,
   ),
