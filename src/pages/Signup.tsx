@@ -35,7 +35,7 @@ export default function SignupPage() {
     setLoading(true);
     try {
       // Call real signup API
-      const res = await api.auth.signup(email, password);
+      const res = await api.auth.signup(email, password, name);
       toast.success(res.message || 'Account created!');
       // Optionally, auto-login after signup (if backend returns token), else redirect to login
       // login(res.data.token, res.data.user); // If token is returned

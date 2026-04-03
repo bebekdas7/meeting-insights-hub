@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Sparkles, CheckSquare, Video } from 'lucide-react';
+import { ArrowLeft, FileText, Sparkles, CheckSquare, Video, Pencil } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { SkeletonBlock } from '@/components/SkeletonLoaders';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,23 @@ import type { Meeting, ActionItem } from '@/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+const formatDurationToMinSec = (seconds: number | string | null | undefined): string => {
+  if (seconds === null || seconds === undefined || seconds === '') return '—';
+  const totalSeconds = typeof seconds === 'string' ? Number(seconds) : seconds;
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '—';
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = Math.round(totalSeconds % 60);
+  return `${mins}.${String(secs).padStart(2, '0')} min`;
+};
+
 export default function MeetingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [meeting, setMeeting] = useState<Meeting | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const spanRef = useRef<HTMLSpanElement>(null);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'transcript' | 'summary' | 'actions'>('summary');
@@ -35,8 +48,9 @@ export default function MeetingDetailPage() {
             videoUrl: meetingRes.meeting.video_path,
             transcript: meetingRes.meeting.transcript,
             summary: meetingRes.meeting.summary,
-            duration: meetingRes.meeting.duration || '—',
+            duration: meetingRes.meeting.duration,
           });
+          setTitleInput(meetingRes.meeting.title || 'Untitled Meeting');
         } else {
           setMeeting(null);
         }
@@ -60,6 +74,54 @@ export default function MeetingDetailPage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Title editing handlers (move out of toggleActionStatus)
+  const handleEditClick = () => {
+    setEditingTitle(true);
+    setTitleInput(meeting?.title || "");
+    setTimeout(() => {
+      const input = document.getElementById("meeting-title-input");
+      if (input) (input as HTMLInputElement).focus();
+    }, 0);
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitleInput(e.target.value);
+  };
+
+  // Adjust input width to match text
+  useEffect(() => {
+    if (editingTitle && inputRef.current && spanRef.current) {
+      // Set span text to input value
+      spanRef.current.textContent = titleInput || '';
+      // Add a little extra space for caret
+      const width = spanRef.current.offsetWidth + 8;
+      inputRef.current.style.width = width + 'px';
+    }
+  }, [titleInput, editingTitle]);
+
+  const handleTitleBlur = async () => {
+    if (meeting && titleInput.trim() && titleInput !== meeting.title) {
+      try {
+        await api.meetings.updateTitle(meeting.id, titleInput);
+        setMeeting({ ...meeting, title: titleInput });
+        toast.success('Title updated');
+      } catch (err) {
+        toast.error('Failed to update title');
+        setTitleInput(meeting.title); // revert
+      }
+    }
+    setEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      (e.target as HTMLInputElement).blur();
+    } else if (e.key === "Escape") {
+      setTitleInput(meeting?.title || "");
+      setEditingTitle(false);
+    }
+  };
 
   const toggleActionStatus = (itemId: string) => {
     setActionItems(prev =>
@@ -93,6 +155,7 @@ export default function MeetingDetailPage() {
     { key: 'transcript' as const, label: 'Transcript', icon: FileText },
     { key: 'actions' as const, label: `Actions (${actionItems.length})`, icon: CheckSquare },
   ];
+  const formattedDuration = formatDurationToMinSec(meeting.duration);
 
   return (
     <div className="animate-fade-in opacity-0" style={{ animationFillMode: 'forwards' }}>
@@ -107,10 +170,47 @@ export default function MeetingDetailPage() {
 
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{meeting.title}</h1>
+          <div className="flex items-center gap-2">
+            {editingTitle ? (
+              <>
+                <input
+                  id="meeting-title-input"
+                  ref={inputRef}
+                  className="text-2xl font-semibold tracking-tight text-foreground bg-transparent border-b border-border focus:outline-none focus:border-primary px-1"
+                  value={titleInput}
+                  onChange={handleTitleChange}
+                  onBlur={handleTitleBlur}
+                  onKeyDown={handleTitleKeyDown}
+                  maxLength={100}
+                  autoFocus
+                  style={{width: '6rem', minWidth: '2rem'}} // fallback width
+                />
+                {/* Hidden span for measuring text width */}
+                <span
+                  ref={spanRef}
+                  className="text-2xl font-semibold tracking-tight px-1 invisible absolute whitespace-pre pointer-events-none"
+                  aria-hidden="true"
+                  style={{ position: 'absolute', left: '-9999px', top: 0 }}
+                >
+                  {titleInput || ''}
+                </span>
+              </>
+            ) : (
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">{meeting.title}</h1>
+            )}
+            <button
+              type="button"
+              className="ml-1 p-1 rounded hover:bg-muted transition-colors"
+              title="Edit title"
+              onClick={handleEditClick}
+              aria-label="Edit meeting title"
+            >
+              <Pencil className="h-5 w-5 text-muted-foreground" />
+            </button>
+          </div>
           <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
             <span>{new Date(meeting.uploadDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-            {meeting.duration && <span className="tabular-nums">· {meeting.duration}</span>}
+            {formattedDuration !== '—' && <span className="tabular-nums">· {formattedDuration}</span>}
           </div>
         </div>
         <StatusBadge status={meeting.status} />

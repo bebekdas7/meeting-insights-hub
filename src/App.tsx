@@ -12,6 +12,9 @@ import MyMeetingsPage from "./pages/MyMeetings";
 import MeetingDetailPage from "./pages/MeetingDetail";
 import ActionItemsPage from "./pages/ActionItems";
 import NotFound from "./pages/NotFound";
+import LandingPage from "./pages/LandingPage";
+import PricingPage from "./pages/PricingPage";
+import PurchaseHistoryPage from "./pages/PurchaseHistory";
 
 const queryClient = new QueryClient();
 
@@ -31,13 +34,16 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <Routes>
+    <Route path="/" element={<LandingPage />} />
     <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
     <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
-    <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+    <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
     <Route path="/meetings" element={<ProtectedRoute><MyMeetingsPage /></ProtectedRoute>} />
     <Route path="/meetings/:id" element={<ProtectedRoute><MeetingDetailPage /></ProtectedRoute>} />
     <Route path="/upload" element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
     <Route path="/action-items" element={<ProtectedRoute><ActionItemsPage /></ProtectedRoute>} />
+    <Route path="/pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
+    <Route path="/purchase-history" element={<ProtectedRoute><PurchaseHistoryPage /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

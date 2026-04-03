@@ -1,29 +1,40 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { api } from '@/services/api';
 import {
-  LayoutDashboard, Video, Upload, CheckSquare, LogOut, Menu, X, Sparkles,
+  LayoutDashboard, Video, Upload, CheckSquare, LogOut, Menu, Sparkles, Zap, ReceiptText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/meetings', icon: Video, label: 'My Meetings' },
   { to: '/upload', icon: Upload, label: 'Upload Meeting' },
   { to: '/action-items', icon: CheckSquare, label: 'Action Items' },
+  { to: '/pricing', icon: CheckSquare, label: 'Pricing' },
+  { to: '/purchase-history', icon: ReceiptText, label: 'Purchase History' },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  useEffect(() => {
+    api.meetings.getCredits()
+      .then((res) => setCredits(res.availableCredits))
+      .catch(() => setCredits(null));
+  }, []);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -45,12 +56,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       >
         {/* Brand */}
-        <div className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-6">
+        <button
+          className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-6 w-full text-left focus:outline-none"
+          onClick={() => navigate("/")}
+          tabIndex={0}
+          aria-label="Go to home"
+        >
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Sparkles className="h-4 w-4" />
           </div>
           <span className="text-lg font-semibold tracking-tight text-foreground">MeetingAI</span>
-        </div>
+        </button>
 
         {/* Nav */}
         <nav className="flex-1 space-y-1 px-3 py-4">
@@ -103,9 +119,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </Button>
           <div className="flex-1" />
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex h-9 w-64 items-center rounded-lg border border-input bg-background px-3 text-sm text-muted-foreground">
-              Search meetings...
-            </div>
+            <Badge variant="secondary" className="hidden sm:inline-flex h-7 px-3 py-1 text-xs font-medium bg-muted text-muted-foreground border border-border shadow-sm gap-1.5">
+              <Zap className="h-3 w-3 text-amber-500" />
+              <span className="font-semibold text-primary">Credits:</span>
+              <span className="ml-0.5">
+                {credits === null ? '—' : credits}
+              </span>
+            </Badge>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
               {user?.name?.[0]?.toUpperCase() || 'U'}
             </div>

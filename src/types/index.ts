@@ -45,3 +45,36 @@ export interface AuthResponse {
   token: string;
   user: User;
 }
+
+export type PurchaseStatus =
+  | "paid"
+  | "failed"
+  | "pending"
+  | "refunded"
+  | string;
+
+export interface CreditHistoryEntry {
+  id: number;
+  user_id: string;
+  type: string;
+  amount: number;
+  source: string;
+  reference_id: string | null;
+  expiry: string | null;
+  created_at: string;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface CreditHistoryResponse {
+  success: boolean;
+  data: CreditHistoryEntry[];
+  pagination: PaginationMeta;
+}

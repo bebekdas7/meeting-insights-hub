@@ -4,7 +4,6 @@ import { CheckSquare } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { EmptyState } from '@/components/EmptyState';
 import { SkeletonTable } from '@/components/SkeletonLoaders';
-import { Input } from '@/components/ui/input';
 import { api } from '@/services/api';
 import type { ActionItem, ActionItemStatus } from '@/types';
 import { toast } from 'sonner';

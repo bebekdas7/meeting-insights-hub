@@ -1,3 +1,5 @@
+import type { CreditHistoryResponse } from "@/types";
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function getHeaders(): HeadersInit {
@@ -53,7 +55,7 @@ export const api = {
       });
       return res.data;
     },
-    signup: (email: string, password: string) =>
+    signup: (email: string, password: string, name: string) =>
       request<{
         success: boolean;
         statusCode: number;
@@ -62,7 +64,7 @@ export const api = {
         timestamp: string;
       }>("/auth/signup", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, name }),
       }),
   },
   meetings: {
@@ -76,9 +78,16 @@ export const api = {
             onProgress(Math.round((e.loaded / e.total) * 100));
         });
         xhr.addEventListener("load", () => {
-          if (xhr.status >= 200 && xhr.status < 300)
+          if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText));
-          else reject(new Error("Upload failed"));
+          } else {
+            try {
+              const body = JSON.parse(xhr.responseText);
+              reject(new Error(body.error || body.message || "Upload failed"));
+            } catch {
+              reject(new Error("Upload failed"));
+            }
+          }
         });
         xhr.addEventListener("error", () => reject(new Error("Upload failed")));
         xhr.open("POST", `${BASE_URL}/meetings/upload`);
@@ -91,18 +100,51 @@ export const api = {
     get: (id: string) => request<any>(`/meetings/${id}`),
     getRecent: () => request<any>("/meetings/recent"),
     getDashboard: () => request<any>("/meetings/dashboard"),
+    updateTitle: (id: string, title: string) =>
+      request<any>(`/meetings/${id}/title`, {
+        method: "PATCH",
+        body: JSON.stringify({ title }),
+      }),
+    getCredits: () =>
+      request<{ success: boolean; availableCredits: number }>(
+        "/payment/credits",
+      ),
+    getSubscriptionStatus: () =>
+      request<{
+        success?: boolean;
+        plan?: string;
+        expiry?: string | null;
+        status?: "free" | "active" | "expired" | string;
+        data?: {
+          plan?: string;
+          expiry?: string | null;
+          status?: "free" | "active" | "expired" | string;
+        };
+      }>("/payment/subscription"),
   },
   actionItems: {
     getByMeeting: (meetingId: string) =>
       request<any[]>(`/action-items/meetings/${meetingId}/action-items`),
-    list: (assignee?: string) =>
-      request<any[]>(
-        `/action-items/user-meetings`,
-      ),
+    list: (assignee?: string) => request<any[]>(`/action-items/user-meetings`),
     update: (id: string, data: any) =>
       request<any>(`/action-items/action-items/${id}`, {
         method: "PATCH",
         body: JSON.stringify(data),
       }),
+  },
+  payment: {
+    createOrder: (payload: any) =>
+      request<any>("/payment/create-order", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    verify: (payload: any) =>
+      request<any>("/payment/verify", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    getCreditsEstimate: () => request<any>("/payment/credits/estimate"),
+    getPurchaseHistory: () =>
+      request<CreditHistoryResponse>("/payment/credits/history"),
   },
 };

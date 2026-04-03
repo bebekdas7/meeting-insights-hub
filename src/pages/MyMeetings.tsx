@@ -11,6 +11,16 @@ import type { Meeting, MeetingStatus } from '@/types';
 
 const STATUSES: (MeetingStatus | 'all')[] = ['all', 'completed', 'pending', 'failed'];
 
+// Helper function to convert seconds to minutes and seconds
+const formatDuration = (seconds: number | string | null | undefined): string => {
+  if (!seconds) return '—';
+  const numSeconds = typeof seconds === 'string' ? parseFloat(seconds) : seconds;
+  if (isNaN(numSeconds)) return '—';
+  const mins = Math.floor(numSeconds / 60);
+  const secs = Math.round(numSeconds % 60);
+  return `${mins}.${secs} min`;
+};
+
 export default function MyMeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,7 +127,7 @@ export default function MyMeetingsPage() {
                   <td className="hidden sm:table-cell px-4 py-3.5 text-muted-foreground">
                     {new Date(m.uploadDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
-                  <td className="hidden md:table-cell px-4 py-3.5 text-muted-foreground tabular-nums">{m.duration || '—'}</td>
+                  <td className="hidden md:table-cell px-4 py-3.5 text-muted-foreground tabular-nums">{formatDuration(m.duration)}</td>
                   <td className="px-4 py-3.5"><StatusBadge status={m.status} /></td>
                 </tr>
               ))}
